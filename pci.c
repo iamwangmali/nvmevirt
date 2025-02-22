@@ -230,9 +230,14 @@ bool nvmev_proc_bars(void)
 	if (old_bar->cc != bar->u_cc) {
 		NVMEV_DEBUG("%s: cc 0x%x:%x -> 0x%x:%x\n", __func__, old_bar->cc, old_bar->csts, bar->u_cc,
 			    bar->u_csts);
-		/* Enable */
+		/* Enable, reset the controller */
 		if (bar->cc.en == 1) {
-			if (nvmev_vdev->admin_q) {
+			if (queue) {
+				queue->cq_head = 0;
+				queue->phase = 1;
+				nvmev_vdev->dbs[0] = nvmev_vdev->old_dbs[0] = 0;
+				nvmev_vdev->dbs[1] = nvmev_vdev->old_dbs[1] = 0;
+				smp_mb();
 				bar->csts.rdy = 1;
 			} else {
 				WARN_ON("Enable device without init admin q");
